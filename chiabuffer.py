@@ -1,46 +1,57 @@
-import time
-
 import shutil
+import glob
+import keyboard
+from datetime import datetime
 
-from watchdog.observers import Observer
-from watchdog.events import PatternMatchingEventHandler
+ext = "plot" # extension we are looking for (you can test usuing .txt files, etc)
+minSize = 800 # Size in GB - if a dest drive has less free space remaining, it's removed from list
 
-dest_drive = "/mnt/tmpusb2/" #where do you want the .plot files moved to?
-monitor_path = "/mnt/buffer/" #What folder do you want monitored?
+now = datetime.now()
+current_time = now.strftime("%H:%M:%S")
 
-if __name__ == "__main__":
-    patterns = ["*"]
-    ignore_patterns = None
-    ignore_directories = True
-    case_sensitive = False
-    my_event_handler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
+print('Started : ' + current_time)
+print('To exit, press:  q')
+sources = ["/media/chaos/WD Blue/Chia Relocate"] # Comma separated list of dirs to monitor
 
-def on_created(event):
-    #print(f"hey, {event.src_path} has been created!"
-    return
+destinations = ["/media/chaos/Seagate Expansion Drive1/Farm"] # comma separated list of dirs to move plots into
 
-def on_moved(event):
-    evt = event
-    #print(f"ok ok ok, someone moved {event.src_path} to {event.dest_path}")
-    get_ext = evt.dest_path[-5:]
-    if get_ext == ".plot":
-        shutil.move(evt.dest_path, dest_drive)
+#######################
+#         begin       #
+#######################
 
-#my_event_handler.on_created = on_created
-#my_event_handler.on_deleted = on_deleted
-#my_event_handler.on_modified = on_modified
-my_event_handler.on_moved = on_moved
+jobs = []
+
+def main():
+    file_count = -1
+    for dest in destinations:
+        total, used, free = shutil.disk_usage(dest)
+        if (free // (2 ** 30)) > minSize:
+                jobs.append(dest)
+    for source in sources:
+        for file in glob.glob(source + "*." + ext):
+            print("File found for moving: " + file)
+            file_count += 1
+            try:
+               shutil.move(file, jobs[file_count % len(jobs)])
+               print(datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ' ' + file + ':  copied successfully')
+
+            # If source and destination are same
+            except shutil.SameFileError:
+                print(datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ' ' + file + ': Source and destination '
+                                                                                   'represents the same file in '
+                      + (jobs[file_count % len(jobs)]))
+
+            # If there is any permission issue
+            except PermissionError:
+                print(datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ' ' + file + ": Permission denied.")
+
+            # For other errors
+            except:
+                print("Error occurred while copying file.")
 
 
-go_recursively = False
-my_observer = Observer()
-my_observer.schedule(my_event_handler, monitor_path, recursive=go_recursively)
-
-my_observer.start()
-
-try:
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    my_observer.stop()
-    my_observer.join()
+while True:
+    main()
+    if keyboard.is_pressed("q"):
+        print("q pressed, ending loop")
+        break
