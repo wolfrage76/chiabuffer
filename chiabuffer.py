@@ -3,21 +3,14 @@ import glob
 import keyboard
 from datetime import datetime
 
-ext = "plot" # extension we are looking for (you can test usuing .txt files, etc)
-minSize = 800 # Size in GB - if a dest drive has less free space remaining, it's removed from list
+ext = "txt"
+minSize = 800
 
 now = datetime.now()
 current_time = now.strftime("%H:%M:%S")
 
 print('Started : ' + current_time)
-print('To exit, press:  q')
-sources = ["/media/chaos/WD Blue/Chia Relocate"] # Comma separated list of dirs to monitor
-
-destinations = ["/media/chaos/Seagate Expansion Drive1/Farm"] # comma separated list of dirs to move plots into
-
-#######################
-#         begin       #
-#######################
+sources = ["/mnt/tmp1/", "/mnt/tmp2/"]
 
 jobs = []
 
@@ -29,7 +22,6 @@ def main():
                 jobs.append(dest)
     for source in sources:
         for file in glob.glob(source + "*." + ext):
-            print("File found for moving: " + file)
             file_count += 1
             try:
                shutil.move(file, jobs[file_count % len(jobs)])
@@ -52,6 +44,3 @@ def main():
 
 while True:
     main()
-    if keyboard.is_pressed("q"):
-        print("q pressed, ending loop")
-        break
