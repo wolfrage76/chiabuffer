@@ -3,7 +3,7 @@ import glob
 import keyboard
 from datetime import datetime
 
-ext = "txt"
+ext = "plot"
 minSize = 800
 
 now = datetime.now()
